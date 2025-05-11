@@ -9,11 +9,20 @@ export async function assignPerformer(eventId: string, performerId: string) {
 
   if (performer.assigned) throw new Error('Performer already assigned');
 
-  await db.$transaction(async (tx) => {
-    await tx.performer.update({
+  await addPerformer(event, performerId);
+
+  await db.$transaction([
+    db.performer.update({
       where: { id: performerId },
       data: { assigned: true },
-    });
-    await addPerformer(tx, event, performerId);
-  });
+    }),
+    db.event.update({
+      where: { id: eventId },
+      data: {
+        performerIds: {
+          push: performerId,
+        },
+      },
+    }),
+  ]);
 }
